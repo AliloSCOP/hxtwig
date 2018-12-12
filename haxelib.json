@@ -1,0 +1,11 @@
+{
+  "name": "hxTwig",
+  "url": "https://github.com/bablukid/hxTwig",
+  "license": "GPL",
+  "classPath": "src",
+  "tags":[],
+  "description": "Haxe externs for Twig (PHP template engine)",
+  "version": "1.0.0",
+  "releasenote": "Initial release",
+  "contributors":["bablukid"]
+}
