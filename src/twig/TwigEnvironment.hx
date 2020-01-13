@@ -1,5 +1,7 @@
 package twig;
 
+import twig.extension.Debug;
+
 typedef TwigEnvironmentOptions = {
     ?debug:Bool,
 }
@@ -12,11 +14,17 @@ class TwigEnvironment{
     private var env:EnvironmentNative;
 
     public function new(loader:twig.loader.ILoader,options:TwigEnvironmentOptions){
-        env = new EnvironmentNative(loader,php.Lib.associativeArrayOfObject(options));
-
+        env = new EnvironmentNative(loader,php.Lib.associativeArrayOfObject(options));      
+        
         //adds some usefull filters for haxe/PHP
         env.addFilter(new Filter("debug",debug)); //tries to print haxe objects as string
-        env.addFilter(new Filter("tophparray",phpArray)); //transforme haxe arrays into php arrays
+        env.addFilter(new Filter("tophparray",phpArray)); //transforms haxe arrays into php arrays
+        
+        if(options.debug){
+            //to enable the dump() function
+            //https://twig.symfony.com/doc/2.x/functions/dump.html
+            env.addExtension( new twig.extension.Debug());
+        }
     }
 
     public function render(tpl:String,params:Dynamic):String{
