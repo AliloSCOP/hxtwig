@@ -1,5 +1,6 @@
 package twig;
 
+import php.NativeIndexedArray;
 import twig.extension.Debug;
 
 typedef TwigEnvironmentOptions = {
@@ -18,13 +19,14 @@ class TwigEnvironment{
         
         //adds some usefull filters for haxe/PHP
         env.addFilter(new Filter("debug",debug)); //tries to print haxe objects as string
-        env.addFilter(new Filter("tophparray",phpArray)); //transforms haxe arrays into php arrays
+        env.addFilter(new Filter("tophparray",hx2php)); //transforms haxe iterables into php arrays
+
+        env.addFunction(new Function("toPhpArray",cast php.Lib.toPhpArray));
+        env.addFunction(new Function("arrayOfObject",cast php.Lib.associativeArrayOfObject));
+
+        //https://twig.symfony.com/doc/2.x/functions/dump.html
+        env.addExtension( new twig.extension.Debug() );
         
-        if(options.debug){
-            //to enable the dump() function
-            //https://twig.symfony.com/doc/2.x/functions/dump.html
-            env.addExtension( new twig.extension.Debug());
-        }
     }
 
     public function render(tpl:String,params:Dynamic):String{
@@ -38,23 +40,35 @@ class TwigEnvironment{
 			if( Reflect.isFunction(field) ){
                 // functions
 				env.addFunction( new twig.Function(fname,field) );
-            }else if ( Std.is(field,Array)){
-                //Arrays are converted to PHP arrays
-                cleanedParams[fname] = php.Lib.toPhpArray(field);
-            }else if( Std.is(field,List) ){
-                cleanedParams[fname] = php.Lib.toPhpArray(Lambda.array(field));
-            }else if( Std.is(field,haxe.ds.StringMap) ){
-                cleanedParams[fname] = php.Lib.associativeArrayOfHash(field);
-            }/*else if( Std.is(field,haxe.ds.IntMap) ){
-                cleanedParams[fname] = php.Lib.toPhpArray(Lambda.array(field));    
-                this does not preserve int indexes
-            }*/else{
+            }else if ( Std.is(field,Array) || Std.is(field,List) || Std.is(field,haxe.ds.StringMap) || Std.is(field,haxe.ds.IntMap) ){
+                cleanedParams[fname] = hx2php(field);
+            }else{
                 //regular param
                 cleanedParams[fname] = field;
             }
 		}
 
         return env.render(tpl,php.Lib.associativeArrayOfHash(cleanedParams));
+    }
+
+    /**
+        Converts haxe iterables to php Array
+    **/
+    function hx2php(it:Iterable<Dynamic>):php.NativeArray{
+        if ( Std.is(it,Array)){            
+            return php.Lib.toPhpArray(cast it);
+        }else if( Std.is(it,List) ){
+            return php.Lib.toPhpArray(Lambda.array(it));
+        }else if( Std.is(it,haxe.ds.StringMap) ){
+            return php.Lib.associativeArrayOfHash( cast it);
+        }else if( Std.is(it,haxe.ds.IntMap) ){
+            var it:haxe.ds.IntMap<Dynamic> = cast it;
+            var out = new php.NativeIndexedArray();
+            for( k in it.keys() ) out[k]= it.get(k);
+            return out;
+        }else{
+            throw "unknown haxe iterable";
+        }
     }
 
     public function addFunction(func:Function):Void{
@@ -77,9 +91,7 @@ class TwigEnvironment{
         return Std.string(p);       
     }
 
-    function phpArray(arr:Array<Dynamic>):php.NativeArray{
-        return php.Lib.toPhpArray(arr);
-    }
+  
 
 }
 
