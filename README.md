@@ -24,3 +24,19 @@ Sys.println( twig.render('index.twig',{
   name : "Bob",
 }) );
 ```
+## Tips
+
+The debug filter will print the object in a Haxe way ( Std.string() is used )
+```
+{{user|debug}}
+```
+
+The dump method will print the object in a PHP way ( var_dump() is used )
+```
+{{dump(user)}}
+```
+
+Every Map, List or Array sent to the template engine will be transformed to a regular PHP array in order to make it iterable by Twig. Nevertheless this transformation is done at the first level, in case of nested iterables, you may need the "tophparray" filter
+```
+{% for v in (haxeArray|tophparray) %}
+```
